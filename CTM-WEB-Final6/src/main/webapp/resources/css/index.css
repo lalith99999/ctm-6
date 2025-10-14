@@ -1,0 +1,95 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #006241, #00b894);
+    margin: 0;
+    padding: 0;
+    color: #fff;
+}
+header {
+    text-align: center;
+    padding: 20px;
+    background: rgba(0,0,0,0.3);
+    font-size: 28px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    color: #f1c40f;
+    text-shadow: 1px 1px 5px #000;
+}
+.container {
+    width: 400px;
+    margin: 70px auto;
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px);
+}
+h2 {
+    color: #fefefe;
+    margin-bottom: 15px;
+}
+label {
+    display: block;
+    text-align: left;
+    margin: 10px 0 5px 8%;
+    font-weight: bold;
+}
+input {
+    width: 85%;
+    padding: 10px;
+    margin-bottom: 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+}
+button {
+    width: 85%;
+    padding: 12px;
+    margin: 8px auto;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    display: block;
+}
+.viewer-btn {
+    background: #f1c40f;
+    color: #000;
+}
+.viewer-btn:hover {
+    background: #d4ac0d;
+    transform: scale(1.05);
+}
+.admin-btn {
+    background: #e67e22;
+    color: #fff;
+}
+.admin-btn:hover {
+    background: #ca6f1e;
+    transform: scale(1.05);
+}
+.error {
+    color: #ff9999;
+    font-weight: bold;
+}
+.ok {
+    color: #a9ffb0;
+    font-weight: bold;
+}
+.register-line {
+    margin-top: 10px;
+}
+.register-line a {
+    color: #fff;
+    text-decoration: underline;
+}
+footer {
+    text-align: center;
+    margin-top: 40px;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+}

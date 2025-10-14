@@ -1,0 +1,130 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #0b5345;
+    color: #fff;
+    margin: 0;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #09493c;
+    padding: 14px 20px;
+}
+
+.brand {
+    font-weight: 800;
+}
+
+a.link,
+.pill-link {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.wrap {
+    max-width: 960px;
+    margin: 24px auto;
+    background: #116a5b;
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #134e43;
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.pill-link {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #1c7c6a;
+    border-radius: 999px;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, .2);
+    transition: background .2s ease;
+}
+
+.pill-link:hover {
+    background: #186b5b;
+}
+
+.muted {
+    opacity: .85;
+}
+
+label {
+    display: block;
+    margin: 10px 0 6px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #134e43;
+    color: #fff;
+}
+
+.btn {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #f1c40f;
+    color: #000;
+}
+
+.btn-disabled {
+    background: #6c757d;
+    color: #eee;
+    cursor: not-allowed;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 8px 12px;
+    display: inline-block;
+}
+
+.msg {
+    background: #134e43;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+    text-align: center;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .15);
+}
+
+.ok {
+    color: #a9dfbf;
+}
+
+.bad {
+    color: #f5b7b1;
+}

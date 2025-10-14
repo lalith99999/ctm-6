@@ -1,0 +1,82 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #0b5345;
+    color: #fff;
+    margin: 0;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #09493c;
+    padding: 16px 22px;
+}
+
+.brand {
+    font-weight: 700;
+}
+
+.nav a {
+    color: #f1c40f;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 14px;
+}
+
+.nav a:hover {
+    text-decoration: underline;
+}
+
+.wrap {
+    max-width: 960px;
+    margin: 26px auto;
+    background: #116a5b;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #134e43;
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    margin-left: 6px;
+}
+
+.badge.lock {
+    background: rgba(231, 76, 60, .15);
+    border: 1px solid rgba(231, 76, 60, .4);
+    color: #ffc7c2;
+}
+
+.pill {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, .2);
+}
+
+.pill.view {
+    background: #f1c40f;
+    color: #000;
+    border-color: rgba(0, 0, 0, .05);
+}
+
+.muted {
+    opacity: .85;
+}

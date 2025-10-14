@@ -1,0 +1,109 @@
+:root {
+    --bg1: #0b5345;
+    --bg2: #00b894;
+    --panel: #116a5b;
+    --accent: #f1c40f;
+    --text: #ffffff;
+    --muted: #f9e79f;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+}
+
+.page {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(17, 106, 91, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 24px 22px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+}
+
+h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    letter-spacing: .3px;
+}
+
+p.rule {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+label {
+    display: block;
+    margin: 10px 0 6px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 11px;
+    border: none;
+    border-radius: 10px;
+    background: #134e43;
+    color: var(--text);
+    outline: none;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn {
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .12s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #000;
+    margin-top: 14px;
+    box-shadow: 0 6px 14px rgba(241, 196, 15, 0.25);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+}
+
+.links {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.links a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.field {
+    margin-bottom: 10px;
+}
