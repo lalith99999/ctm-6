@@ -105,28 +105,34 @@ public class TournamentDaoImpl implements TournamentDao {
 
         try (Connection con = DaoUtil.getMyConnection()) {
             con.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = con.prepareStatement(
+                        "DELETE FROM player_performance WHERE match_id IN (SELECT match_id FROM matches WHERE tournament_id=?)")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
 
-            con.prepareStatement(
-                    "DELETE FROM player_performance WHERE match_id IN (SELECT match_id FROM matches WHERE tournament_id=?)")
-                    .executeUpdate();
+                try (PreparedStatement ps = con.prepareStatement("DELETE FROM matches WHERE tournament_id=?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM matches WHERE tournament_id=?")) {
-                ps.setLong(1, id);
-                ps.executeUpdate();
+                try (PreparedStatement ps = con.prepareStatement("DELETE FROM tournament_teams WHERE tournament_id=?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                try (PreparedStatement ps = con.prepareStatement("DELETE FROM tournaments WHERE tournament_id=?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                con.commit();
+                return before.get();
+            } catch (SQLException e) {
+                con.rollback();
+                throw e;
             }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM tournament_teams WHERE tournament_id=?")) {
-                ps.setLong(1, id);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM tournaments WHERE tournament_id=?")) {
-                ps.setLong(1, id);
-                ps.executeUpdate();
-            }
-
-            con.commit();
-            return before.get();
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
