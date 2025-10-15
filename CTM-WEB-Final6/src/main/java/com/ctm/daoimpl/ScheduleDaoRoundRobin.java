@@ -60,6 +60,7 @@ public class ScheduleDaoRoundRobin {
                     .withMinute(0)
                     .withSecond(0)
                     .withNano(0);
+            LocalDateTime matchDate = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
             int matchCount = 0;
 
             // ✅ Step 3: Generate round-robin fixtures
