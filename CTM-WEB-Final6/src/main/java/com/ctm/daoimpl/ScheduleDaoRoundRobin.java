@@ -44,6 +44,11 @@ public class ScheduleDaoRoundRobin {
                 n++;
             }
 
+            LocalDateTime matchDate = LocalDateTime.now()
+                    .withHour(9)
+                    .withMinute(0)
+                    .withSecond(0)
+                    .withNano(0);
             LocalDateTime matchDate = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
             int matchCount = 0;
 
@@ -59,13 +64,14 @@ public class ScheduleDaoRoundRobin {
                             "INSERT INTO matches " +
                             "(match_id, tournament_id, team_a_id, team_b_id, venue, datetime, status, " +
                             "a_runs, a_wkts, a_extras, a_overs, b_runs, b_wkts, b_extras, b_overs) " +
-                            "VALUES ((SELECT NVL(MAX(match_id),0)+1 FROM matches), ?, ?, ?, ?, ?, 'SCHEDULED', 0,0,0,0,0,0,0,0)")) {
+                            "VALUES ((SELECT NVL(MAX(match_id),0)+1 FROM matches), ?, ?, ?, ?, ?, ?, 0,0,0,0,0,0,0,0)")) {
 
                         ps.setLong(1, tournamentId);
                         ps.setLong(2, teamA);
                         ps.setLong(3, teamB);
                         ps.setString(4, venue);
                         ps.setTimestamp(5, java.sql.Timestamp.valueOf(matchDate));
+                        ps.setString(6, com.ctm.model.MatchStatus.SCHEDULED.name());
                         ps.executeUpdate();
                         matchCount++;
                     }
@@ -81,7 +87,27 @@ public class ScheduleDaoRoundRobin {
             }
 
             con.commit();
-            System.out.println("✅ Fixtures generated successfully! Count: " + matchCount);
+            String sql = "SELECT m.match_id, t1.name AS team_a, t2.name AS team_b, m.venue, m.datetime " +
+                         "FROM matches m " +
+                         "JOIN teams t1 ON m.team_a_id = t1.team_id " +
+                         "JOIN teams t2 ON m.team_b_id = t2.team_id " +
+                         "WHERE m.tournament_id=? ORDER BY m.datetime, m.match_id";
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setLong(1, tournamentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    System.out.println("✅ Fixtures generated successfully! Count: " + matchCount);
+                    while (rs.next()) {
+                        long matchId = rs.getLong("match_id");
+                        String teamAName = rs.getString("team_a");
+                        String teamBName = rs.getString("team_b");
+                        String matchVenue = rs.getString("venue");
+                        Timestamp when = rs.getTimestamp("datetime");
+                        String dateStr = when == null ? "-" : when.toLocalDateTime().toLocalDate().toString();
+                        System.out.printf("#%d: %s vs %s at %s on %s%n", matchId, teamAName, teamBName, matchVenue, dateStr);
+                    }
+                }
+            }
             return matchCount > 0;
 
         } catch (SQLException e) {
