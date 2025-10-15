@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.ctm.annotations.Column;
+import com.ctm.annotations.FK;
 import com.ctm.annotations.Id;
 import com.ctm.annotations.Table;
 import com.ctm.model.MatchTeamScore;
@@ -116,34 +117,57 @@ public class AnnotationManager {
         if (t == null) return;
 
         StringBuilder ddl = new StringBuilder("CREATE TABLE " + t.name() + " (");
+        StringBuilder cols = new StringBuilder();
+        StringBuilder constraints = new StringBuilder();
         boolean first = true;
 
         for (Field f : c.getDeclaredFields()) {
             Column col = f.getAnnotation(Column.class);
             if (col == null) continue;
 
-            if (!first) ddl.append(", ");
+            if (!first) cols.append(", ");
             first = false;
 
-            ddl.append(col.name()).append(" ");
+            StringBuilder colDef = new StringBuilder();
+            colDef.append(col.name()).append(" ");
 
             if (f.getType() == String.class || f.getType().isEnum()) {
                 int len = (col.length() == 0 ? 100 : col.length());
-                ddl.append("VARCHAR2(").append(len).append(")");
+                colDef.append("VARCHAR2(").append(len).append(")");
             } else if (f.getType() == int.class || f.getType() == Integer.class ||
                     f.getType() == long.class || f.getType() == Long.class) {
-                ddl.append("NUMBER");
+                colDef.append("NUMBER");
             } else if (f.getType() == double.class || f.getType() == Double.class) {
-                ddl.append("NUMBER");
+                colDef.append("NUMBER");
             } else {
-                ddl.append("VARCHAR2(100)");
+                colDef.append("VARCHAR2(100)");
             }
 
-            if (!col.nullable()) ddl.append(" NOT NULL");
-            if (f.getAnnotation(Id.class) != null) ddl.append(" PRIMARY KEY");
+            if (!col.nullable()) colDef.append(" NOT NULL");
+
+            if (!col.defaultValue().isEmpty()) {
+                String def = col.defaultValue();
+                if ((f.getType() == String.class || f.getType().isEnum()) && !def.startsWith("'")) {
+                    def = "'" + def + "'";
+                }
+                colDef.append(" DEFAULT ").append(def);
+            }
+
+            if (f.getAnnotation(Id.class) != null) colDef.append(" PRIMARY KEY");
+
+            cols.append(colDef);
+
+            FK fk = f.getAnnotation(FK.class);
+            if (fk != null) {
+                String constraintName = ("FK_" + t.name() + "_" + col.name()).toUpperCase().replaceAll("[^A-Z0-9_]", "_");
+                constraints.append(", CONSTRAINT ").append(constraintName)
+                           .append(" FOREIGN KEY (").append(col.name()).append(") REFERENCES ")
+                           .append(fk.references());
+                if (!fk.onDelete().isEmpty()) constraints.append(" ON DELETE ").append(fk.onDelete());
+            }
         }
 
-        ddl.append(")");
+        ddl.append(cols).append(constraints).append(")");
 
         try {
             st.executeUpdate(ddl.toString());

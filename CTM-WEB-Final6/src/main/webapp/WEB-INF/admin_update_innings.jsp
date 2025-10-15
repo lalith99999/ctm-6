@@ -1,8 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page import="java.util.*, com.ctm.model.Match, com.ctm.model.Player, com.ctm.model.Tournament" %>
+<%@ page import="java.util.*, com.ctm.model.Match, com.ctm.model.MatchStatus" %>
 <%
   String role = (String) session.getAttribute("role");
-  if (role == null || !"admin".equalsIgnoreCase(role)) { response.sendRedirect("index.jsp"); return; }
+  if (role == null || !"admin".equalsIgnoreCase(role)) { response.sendRedirect("/index.jsp"); return; }
   response.setHeader("Cache-Control","no-cache, no-store, must-revalidate");
   response.setHeader("Pragma","no-cache");
   response.setDateHeader("Expires",0);
@@ -26,145 +26,112 @@
 </div>
 
 <div class="wrap">
-  <% if (msg != null && !msg.isEmpty()) { %><div class="msg">✅ <%= msg.replace("+"," ") %></div><% } %>
-  <% if (err != null && !err.isEmpty()) { %><div class="msg">❌ <%= err.replace("+"," ") %></div><% } %>
+  <% if (msg != null) { %><div class="banner success"><%= msg %></div><% } %>
+  <% if (err != null) { %><div class="banner error"><%= err %></div><% } %>
 
-<% if ("tournaments".equals(mode)) { %>
-  <h2>Select a Tournament (LIVE matches only)</h2>
-  <%
-    List<Map<String,Object>> tournaments = (List<Map<String,Object>>) request.getAttribute("tournaments");
-    if (tournaments == null || tournaments.isEmpty()) {
-  %>
-    <p>No tournaments with LIVE matches right now.</p>
-  <% } else {
-       for (Map<String,Object> t : tournaments) {
-  %>
-    <div class="row">
-      <div><b><%= t.get("name") %></b> <span class="note">(ID: <%= t.get("id") %>)</span></div>
-      <div><a class="pill" href="updateinnings?action=matches&tid=<%= t.get("id") %>">Open</a></div>
+  <% if ("tournaments".equals(mode)) { %>
+    <h2>Select a Tournament</h2>
+    <p>Only tournaments with LIVE matches appear here.</p>
+    <%
+      List<Map<String,Object>> tournaments = (List<Map<String,Object>>) request.getAttribute("tournaments");
+      if (tournaments == null || tournaments.isEmpty()) {
+    %>
+      <p class="empty">No live matches right now.</p>
+    <%
+      } else {
+    %>
+      <table>
+        <tr><th>ID</th><th>Name</th><th>Live Matches</th><th>Action</th></tr>
+        <% for (Map<String,Object> row : tournaments) { %>
+          <tr>
+            <td><%= row.get("id") %></td>
+            <td><%= row.get("name") %></td>
+            <td><span class="chip chip-ok"><%= row.get("count") %></span></td>
+            <td><a class="primary" href="updateinnings?action=matches&tid=<%= row.get("id") %>">Open</a></td>
+          </tr>
+        <% } %>
+      </table>
+    <% } %>
+
+  <% } else if ("matches".equals(mode)) { %>
+    <h2>Live Matches</h2>
+    <%
+      List<Match> liveMatches = (List<Match>) request.getAttribute("liveMatches");
+      com.ctm.model.Tournament tour = (com.ctm.model.Tournament) request.getAttribute("tournament");
+      if (tour != null) {
+    %>
+      <p class="subtitle">Tournament: <b><%= tour.getName() %></b></p>
+    <% }
+      if (liveMatches == null || liveMatches.isEmpty()) {
+    %>
+      <p class="empty">No LIVE matches to update.</p>
+      <div class="actions"><a class="link" href="updateinnings">← Back to tournaments</a></div>
+    <% } else { %>
+      <table>
+        <tr><th>ID</th><th>Match</th><th>Date</th><th>Venue</th><th>Action</th></tr>
+        <% for (Match m : liveMatches) { %>
+          <tr>
+            <td><%= m.getMatchId() %></td>
+            <td><%= m.getTeam1Name() %> vs <%= m.getTeam2Name() %></td>
+            <td><%= m.getDateTime() != null ? m.getDateTime().toLocalDate() : "-" %></td>
+            <td><%= m.getVenue() %></td>
+            <td><a class="primary" href="updateinnings?action=form&matchId=<%= m.getMatchId() %>">Update Innings</a></td>
+          </tr>
+        <% } %>
+      </table>
+      <div class="actions"><a class="link" href="updateinnings">← Back to tournaments</a></div>
+    <% } %>
+
+  <% } else if ("form".equals(mode)) {
+       Match match = (Match) request.getAttribute("match");
+       com.ctm.model.Tournament tour = (com.ctm.model.Tournament) request.getAttribute("tournament");
+       Long firstTeamId = (Long) request.getAttribute("firstTeamId");
+       Integer target = (Integer) request.getAttribute("target");
+       boolean firstLocked = match.getFirstInningsTeamId() != null;
+       boolean matchFinished = match.getStatus() == MatchStatus.FINISHED;
+       String firstTeamName = firstTeamId == null ? "TBD" : (firstTeamId == match.getTeam1Id() ? match.getTeam1Name() : match.getTeam2Name());
+       Long secondTeamId = null;
+       if (firstTeamId != null) secondTeamId = (firstTeamId.equals(match.getTeam1Id()) ? match.getTeam2Id() : match.getTeam1Id());
+       String secondTeamName = secondTeamId == null ? "TBD" : (secondTeamId.equals(match.getTeam1Id()) ? match.getTeam1Name() : match.getTeam2Name());
+    %>
+    <h2>Match #<%= match.getMatchId() %> — <%= match.getTeam1Name() %> vs <%= match.getTeam2Name() %></h2>
+    <% if (tour != null) { %><p class="subtitle">Tournament: <b><%= tour.getName() %></b></p><% } %>
+    <div class="grid">
+      <div class="card">
+        <h3>First Innings — <%= firstTeamName %></h3>
+        <p class="note">Once locked, the first innings cannot be edited.</p>
+        <p class="summary">Score: <b><%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getARuns() : match.getBRuns() %></b> / <b><%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getAWkts() : match.getBWkts() %></b> in <b><%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getAOvers() : match.getBOvers() %></b> overs</p>
+        <form method="post" action="updateinnings" class="form" <%= firstLocked ? "data-disabled=1" : "" %>>
+          <input type="hidden" name="phase" value="first">
+          <input type="hidden" name="matchId" value="<%= match.getMatchId() %>">
+          <input type="hidden" name="tid" value="<%= match.getTournamentId() %>">
+          <input type="hidden" name="battingTeamId" value="<%= firstTeamId != null ? firstTeamId : match.getTeam1Id() %>">
+          <label>Runs <input type="number" name="runs" min="0" value="<%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getARuns() : match.getBRuns() %>" <%= firstLocked ? "readonly" : "" %>></label>
+          <label>Wickets <input type="number" name="wickets" min="0" max="10" value="<%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getAWkts() : match.getBWkts() %>" <%= firstLocked ? "readonly" : "" %>></label>
+          <label>Overs <input type="text" name="overs" value="<%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getAOvers() : match.getBOvers() %>" <%= firstLocked ? "readonly" : "" %>></label>
+          <label>Extras <input type="number" name="extras" min="0" value="<%= firstTeamId != null && firstTeamId == match.getTeam1Id() ? match.getAExtras() : match.getBExtras() %>" <%= firstLocked ? "readonly" : "" %>></label>
+          <button class="primary" type="submit" <%= firstLocked ? "disabled" : "" %>>Lock First Innings</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Second Innings — <%= secondTeamName %></h3>
+        <% if (target != null) { %><p class="note">Target: <b><%= target %></b> runs</p><% } %>
+        <p class="summary">Score: <b><%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getARuns() : match.getBRuns() %></b> / <b><%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getAWkts() : match.getBWkts() %></b> in <b><%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getAOvers() : match.getBOvers() %></b> overs</p>
+        <form method="post" action="updateinnings" class="form" <%= (!firstLocked || matchFinished) ? "data-disabled=1" : "" %>>
+          <input type="hidden" name="phase" value="second">
+          <input type="hidden" name="matchId" value="<%= match.getMatchId() %>">
+          <input type="hidden" name="tid" value="<%= match.getTournamentId() %>">
+          <label>Runs <input type="number" name="runs" min="0" value="<%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getARuns() : match.getBRuns() %>" <%= (!firstLocked || matchFinished) ? "readonly" : "" %>></label>
+          <label>Wickets <input type="number" name="wickets" min="0" max="10" value="<%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getAWkts() : match.getBWkts() %>" <%= (!firstLocked || matchFinished) ? "readonly" : "" %>></label>
+          <label>Overs <input type="text" name="overs" value="<%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getAOvers() : match.getBOvers() %>" <%= (!firstLocked || matchFinished) ? "readonly" : "" %>></label>
+          <label>Extras <input type="number" name="extras" min="0" value="<%= secondTeamId != null && secondTeamId == match.getTeam1Id() ? match.getAExtras() : match.getBExtras() %>" <%= (!firstLocked || matchFinished) ? "readonly" : "" %>></label>
+          <button class="primary" type="submit" <%= (!firstLocked || matchFinished) ? "disabled" : "" %>>Finalize Match</button>
+        </form>
+      </div>
     </div>
-  <% }} %>
-
-<% } else if ("matches".equals(mode)) { %>
-  <%
-    com.ctm.model.Tournament tour = (com.ctm.model.Tournament) request.getAttribute("tournament");
-    List<Map<String,Object>> liveMatches = (List<Map<String,Object>>) request.getAttribute("liveMatches");
-  %>
-  <h2>LIVE Matches — <%= tour.getName() %></h2>
-  <table>
-    <tr><th>ID</th><th>Match</th><th>Date</th><th>Venue</th><th>Action</th></tr>
-    <% if (liveMatches == null || liveMatches.isEmpty()) { %>
-      <tr><td colspan="5">No LIVE matches in this tournament.</td></tr>
-    <% } else { for (Map<String,Object> m : liveMatches) { %>
-      <tr>
-        <td><%= m.get("id") %></td>
-        <td><%= m.get("aName") %> vs <%= m.get("bName") %></td>
-        <td><%= m.get("datetime") %></td>
-        <td><%= m.get("venue") %></td>
-        <td><a class="pill" href="updateinnings?action=form&matchId=<%= m.get("id") %>">Update Innings</a></td>
-      </tr>
-    <% } } %>
-  </table>
-  <div style="margin-top:10px;"><a class="link" href="updateinnings">← Back to tournaments</a></div>
-
-<% } else if ("form".equals(mode)) { %>
-  <%
-    Match match = (Match) request.getAttribute("match");
-    List<Player> teamAPlayers = (List<Player>) request.getAttribute("teamAPlayers");
-    List<Player> teamBPlayers = (List<Player>) request.getAttribute("teamBPlayers");
-    long battingTeamId = (Long) request.getAttribute("battingTeamId");
-    long bowlingTeamId = (Long) request.getAttribute("bowlingTeamId");
-
-    Map<String,Object> draft = (Map<String,Object>) request.getAttribute("draft");
-    Integer dTotalRuns = draft!=null ? (Integer) draft.get("totalRuns") : null;
-    Integer dTotalWkts = draft!=null ? (Integer) draft.get("totalWkts") : null;
-    Double dOvers     = draft!=null ? (Double)  draft.get("overs")     : null;
-  %>
-
-  <h2>Match #<%= match.getId() %> — Update Innings</h2>
-  <div class="grid">
-    <div class="card">
-      <h3>Batting Team</h3>
-      <form action="updateinnings" method="get">
-        <input type="hidden" name="action" value="form">
-        <input type="hidden" name="matchId" value="<%= match.getId() %>">
-        <label>
-          <input type="radio" name="battingTeamId" value="<%= match.getTeamAId() %>" <%= (battingTeamId==match.getTeamAId()?"checked":"") %> >
-          Team A
-        </label>
-        &nbsp;&nbsp;
-        <label>
-          <input type="radio" name="battingTeamId" value="<%= match.getTeamBId() %>" <%= (battingTeamId==match.getTeamBId()?"checked":"") %> >
-          Team B
-        </label>
-        &nbsp;&nbsp;
-        <button class="btn" type="submit">Switch</button>
-      </form>
-      <p class="note">Choose the batting side, then enter totals & player-wise details below.</p>
-    </div>
-
-    <div class="card">
-      <h3>Team Totals</h3>
-      <form action="updateinnings" method="get" id="saveForm">
-        <input type="hidden" name="action" value="save">
-        <input type="hidden" name="matchId" value="<%= match.getId() %>">
-        <input type="hidden" name="battingTeamId" value="<%= battingTeamId %>">
-        <div class="row" style="gap:8px;justify-content:flex-start">
-          <div>Runs: <input type="number" name="totalRuns" min="0" value="<%= dTotalRuns!=null? dTotalRuns : 0 %>"></div>
-          <div>Wickets: <input type="number" name="totalWkts" min="0" max="10" value="<%= dTotalWkts!=null? dTotalWkts : 0 %>"></div>
-          <div>Overs: <input type="text" name="overs" value="<%= dOvers!=null? dOvers : 0 %>"></div>
-        </div>
-
-        <div class="grid" style="margin-top:12px">
-          <div class="card">
-            <h3>Batsmen (Batting Team)</h3>
-            <table>
-              <tr><th>#</th><th>Name</th><th>Runs</th><th>Balls</th><th>Out?</th></tr>
-              <%
-                List<Player> bats = (battingTeamId==match.getTeamAId()) ? teamAPlayers : teamBPlayers;
-                for (Player p : bats) {
-              %>
-                <tr>
-                  <td><%= p.getJerseyNumber() %><input type="hidden" name="bats_jersey" value="<%= p.getJerseyNumber() %>"></td>
-                  <td style="text-align:left"><%= p.getName() %></td>
-                  <td><input type="number" name="bats_runs" min="0" value="0"></td>
-                  <td><input type="number" name="bats_balls" min="0" value="0"></td>
-                  <td><input type="checkbox" name="bats_out"></td>
-                </tr>
-              <% } %>
-            </table>
-            <p class="note">Sum of batsman runs must equal team total.</p>
-          </div>
-
-          <div class="card">
-            <h3>Bowlers (Bowling Team)</h3>
-            <table>
-              <tr><th>#</th><th>Name</th><th>Runs Conceded</th><th>Wickets</th></tr>
-              <%
-                List<Player> bowls = (bowlingTeamId==match.getTeamAId()) ? teamAPlayers : teamBPlayers;
-                for (Player p : bowls) {
-              %>
-                <tr>
-                  <td><%= p.getJerseyNumber() %><input type="hidden" name="bowl_jersey" value="<%= p.getJerseyNumber() %>"></td>
-                  <td style="text-align:left"><%= p.getName() %></td>
-                  <td><input type="number" name="bowl_runs" min="0" value="0"></td>
-                  <td><input type="number" name="bowl_wkts" min="0" max="10" value="0"></td>
-                </tr>
-              <% } %>
-            </table>
-            <p class="note">Sum of bowlers’ wickets must equal team wickets.</p>
-          </div>
-        </div>
-
-        <div style="margin-top:12px">
-          <button class="btn btn-primary" type="submit">Save Innings</button>
-          &nbsp; <a class="link" href="updateinnings?action=matches&tid=<%= match.getTournamentId() %>">Cancel</a>
-        </div>
-      </form>
-    </div>
-  </div>
-<% } %>
+    <div class="actions"><a class="link" href="updateinnings?action=matches&tid=<%= match.getTournamentId() %>">← Back to matches</a></div>
+  <% } %>
 </div>
-
 </body>
 </html>

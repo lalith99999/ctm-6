@@ -21,6 +21,7 @@ public interface TeamDao {
     // ---------- PLAYERS ----------
     Optional<Player> findPlayer(long teamId, long jerseyNo);
     List<Player> listPlayersOfTeam(long teamId);
+    int countPlayersOfTeam(long teamId);
     Player createPlayer(long teamId, long jerseyNo, String name, PlayerType type);
     Player updatePlayerInTeam(long teamId, long jerseyNo, String newName, PlayerType newType);
     Player deletePlayerInTeam(long teamId, long jerseyNo);
