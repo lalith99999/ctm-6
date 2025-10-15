@@ -20,7 +20,13 @@ public class ScheduleDaoRoundRobin {
             return false;
         }
 
-        try (Connection con = DaoUtil.getMyConnection()) {
+        Connection con = null;
+        try {
+            con = DaoUtil.getMyConnection();
+            if (con == null) {
+                System.err.println("❌ Unable to obtain database connection – aborting fixture generation.");
+                return false;
+            }
             con.setAutoCommit(false);
 
             // ✅ Step 1: Check for existing fixtures
@@ -30,6 +36,11 @@ public class ScheduleDaoRoundRobin {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
                         System.err.println("⚠ Fixtures already exist for tournament " + tournamentId);
+                        try {
+                            con.rollback();
+                        } catch (SQLException rollEx) {
+                            System.err.println("⚠ Rollback failed: " + rollEx.getMessage());
+                        }
                         return false;
                     }
                 }
@@ -113,9 +124,38 @@ public class ScheduleDaoRoundRobin {
         } catch (SQLException e) {
             System.err.println("❌ SQL error while generating fixtures:");
             e.printStackTrace();
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollEx) {
+                    System.err.println("⚠ Rollback failed: " + rollEx.getMessage());
+                }
+            }
         } catch (Exception e) {
             System.err.println("❌ General error while generating fixtures:");
             e.printStackTrace();
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollEx) {
+                    System.err.println("⚠ Rollback failed: " + rollEx.getMessage());
+                }
+            }
+        } finally {
+            if (con != null) {
+                try {
+                    if (!con.getAutoCommit()) {
+                        con.setAutoCommit(true);
+                    }
+                } catch (SQLException ignore) {
+                    // ignore
+                }
+                try {
+                    con.close();
+                } catch (SQLException ignore) {
+                    // ignore
+                }
+            }
         }
         return false;
     }
