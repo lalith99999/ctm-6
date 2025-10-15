@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -44,8 +48,33 @@ public class FixturesGenerateServlet extends HttpServlet {
         long tid = parseLong(req.getParameter("tid"));
 
         if (tid <= 0) {
+            List<Tournament> tournaments = tDao.listAllTournaments();
+            List<Map<String, Object>> stats = new ArrayList<>();
+
+            for (Tournament t : tournaments) {
+                List<TeamStanding> teams = tDao.listTeamsInTournament(t.getId());
+                int enrolled = teams.size();
+                boolean eligible = enrolled >= 3;
+                boolean squadsOk = eligible;
+                if (eligible) {
+                    for (TeamStanding standing : teams) {
+                        int count = teamDao.countPlayersOfTeam(standing.getTeamId());
+                        if (count != 11) {
+                            squadsOk = false;
+                            break;
+                        }
+                    }
+                }
+                Map<String, Object> row = new HashMap<>();
+                row.put("tournament", t);
+                row.put("enrolled", enrolled);
+                row.put("squadsOk", squadsOk);
+                row.put("fixtures", tDao.fixturesExist(t.getId()));
+                stats.add(row);
+            }
+
             req.setAttribute("mode", "list");
-            req.setAttribute("tournaments", tDao.listAllTournaments());
+            req.setAttribute("tournamentStats", stats);
             req.getRequestDispatcher("admin_fixtures.jsp").forward(req, resp);
             return;
         }
@@ -57,21 +86,20 @@ public class FixturesGenerateServlet extends HttpServlet {
         }
 
         boolean fixturesExist = tDao.fixturesExist(tid);
-
-        // 🔹 Generate fixtures
-        if ("generate".equalsIgnoreCase(action)) {
-            List<TeamStanding> teams = tDao.listTeamsInTournament(tid);
-            int count = (teams == null ? 0 : teams.size());
-            boolean allHave11 = true;
-
+        List<TeamStanding> teams = tDao.listTeamsInTournament(tid);
+        int count = teams.size();
+        boolean allHave11 = count >= 3;
+        if (allHave11) {
             for (TeamStanding ts : teams) {
-                int sz = teamDao.listPlayersOfTeam(ts.getTeamId()).size();
-                if (sz != 11) {
+                if (teamDao.countPlayersOfTeam(ts.getTeamId()) != 11) {
                     allHave11 = false;
                     break;
                 }
             }
+        }
 
+        // 🔹 Generate fixtures
+        if ("generate".equalsIgnoreCase(action)) {
             if (count < 3 || !allHave11 || fixturesExist) {
                 req.setAttribute("err", "Fixture generation failed. Check conditions.");
                 req.setAttribute("mode", "confirm");
@@ -103,7 +131,8 @@ public class FixturesGenerateServlet extends HttpServlet {
                          "FROM matches m " +
                          "JOIN teams t1 ON m.team_a_id = t1.team_id " +
                          "JOIN teams t2 ON m.team_b_id = t2.team_id " +
-                         "WHERE m.tournament_id=? ORDER BY m.match_id";
+                         "WHERE m.tournament_id=? ORDER BY m.datetime, m.match_id";
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
             try (PreparedStatement ps = DaoUtil.getMyPreparedStatement(sql)) {
                 ps.setLong(1, tid);
@@ -114,7 +143,10 @@ public class FixturesGenerateServlet extends HttpServlet {
                         m.setTeam1Name(rs.getString("team_a_name"));
                         m.setTeam2Name(rs.getString("team_b_name"));
                         m.setVenue(rs.getString("venue"));
-                        m.setDateTime(LocalDateTime.parse(rs.getString("datetime")));
+                        Timestamp ts = rs.getTimestamp("datetime");
+                        if (ts != null) {
+                            m.setDateTime(ts.toLocalDateTime());
+                        }
                         created.add(m);
                     }
                 }
@@ -126,6 +158,7 @@ public class FixturesGenerateServlet extends HttpServlet {
             req.setAttribute("mode", "result");
             req.setAttribute("msg", "Fixtures generated successfully!");
             req.setAttribute("matches", created);
+            req.setAttribute("dateFmt", fmt);
             req.getRequestDispatcher("admin_fixtures.jsp").forward(req, resp);
             return;
         }
@@ -133,9 +166,9 @@ public class FixturesGenerateServlet extends HttpServlet {
         // 🔹 Confirm mode
         req.setAttribute("mode", "confirm");
         req.setAttribute("tournament", tour);
-        req.setAttribute("enrolledCount", tDao.listTeamsInTournament(tid).size());
+        req.setAttribute("enrolledCount", count);
         req.setAttribute("already", fixturesExist ? 1 : 0);
-        req.setAttribute("squadsOk", Boolean.TRUE);
+        req.setAttribute("squadsOk", allHave11);
         req.getRequestDispatcher("admin_fixtures.jsp").forward(req, resp);
     }
 
