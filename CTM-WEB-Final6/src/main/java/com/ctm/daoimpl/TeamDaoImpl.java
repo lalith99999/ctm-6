@@ -161,6 +161,20 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
+    public int countPlayersOfTeam(long teamId) {
+        String sql = "SELECT COUNT(*) FROM team_players WHERE team_id=?";
+        try (PreparedStatement ps = DaoUtil.getMyPreparedStatement(sql)) {
+            ps.setLong(1, teamId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    @Override
     public Player createPlayer(long teamId, long jerseyNo, String name, PlayerType type) {
         long global = teamId * 1000 + jerseyNo;
         if (findPlayer(teamId, jerseyNo).isPresent()) return null;

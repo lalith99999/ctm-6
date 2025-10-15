@@ -1,8 +1,11 @@
 package com.ctm.servlet;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
@@ -33,6 +36,8 @@ public class StartMatchServlet extends HttpServlet {
         resp.setDateHeader("Expires", 0);
 
         String tidStr = req.getParameter("tid");
+        if (req.getParameter("msg") != null) req.setAttribute("msg", req.getParameter("msg"));
+        if (req.getParameter("err") != null) req.setAttribute("err", req.getParameter("err"));
 
         // 1️⃣ First load: list all tournaments with today’s match count
         if (tidStr == null) {
@@ -71,11 +76,19 @@ public class StartMatchServlet extends HttpServlet {
         resp.setDateHeader("Expires", 0);
 
         long matchId = parseLong(req.getParameter("matchId"));
-        long tossWinnerId = parseLong(req.getParameter("tossWinnerId"));
-        String tossDecision = req.getParameter("tossDecision");
+        long tournamentId = parseLong(req.getParameter("tid"));
 
-        boolean ok = matchDao.startMatch(matchId, tossWinnerId, tossDecision);
-        resp.sendRedirect(ok ? "startmatch?msg=Match+Started" : "startmatch?err=Failed+to+start+match");
+        Optional<Match> started = matchDao.startMatch(matchId);
+        if (started.isPresent()) {
+            Match m = started.get();
+            String winnerName = (m.getTossWinnerTeamId() == m.getTeam1Id()) ? m.getTeam1Name() : m.getTeam2Name();
+            String message = String.format("%s won the toss and chose to %s", winnerName,
+                    m.getTossDecision() == null ? "BAT" : m.getTossDecision().name());
+            String encoded = URLEncoder.encode(message, StandardCharsets.UTF_8);
+            resp.sendRedirect("startmatch?tid=" + tournamentId + "&msg=" + encoded);
+        } else {
+            resp.sendRedirect("startmatch?tid=" + tournamentId + "&err=" + URLEncoder.encode("Unable to start match", StandardCharsets.UTF_8));
+        }
     }
 
     private long parseLong(String s) {

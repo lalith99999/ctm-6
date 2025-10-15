@@ -2,6 +2,7 @@ package com.ctm.daoimpl;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.ctm.model.TeamStanding;
@@ -35,21 +36,22 @@ public class ScheduleDaoRoundRobin {
             }
 
             // ✅ Step 2: Prepare data
-            int n = teams.size();
+            List<TeamStanding> bracket = new ArrayList<>(teams);
+            int n = bracket.size();
             boolean odd = (n % 2 != 0);
             if (odd) {
-                teams.add(new TeamStanding(-1L, "BYE", "NA", 0, 0.0, 0));
+                bracket.add(new TeamStanding(-1L, "BYE", "NA", 0, 0.0, 0));
                 n++;
             }
 
-            LocalDateTime matchDate = LocalDateTime.now().plusDays(1);
+            LocalDateTime matchDate = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
             int matchCount = 0;
 
             // ✅ Step 3: Generate round-robin fixtures
             for (int round = 0; round < n - 1; round++) {
                 for (int i = 0; i < n / 2; i++) {
-                    long teamA = teams.get(i).getTeamId();
-                    long teamB = teams.get(n - 1 - i).getTeamId();
+                    long teamA = bracket.get(i).getTeamId();
+                    long teamB = bracket.get(n - 1 - i).getTeamId();
 
                     if (teamA == -1 || teamB == -1) continue;
 
@@ -63,7 +65,7 @@ public class ScheduleDaoRoundRobin {
                         ps.setLong(2, teamA);
                         ps.setLong(3, teamB);
                         ps.setString(4, venue);
-                        ps.setString(5, matchDate.toString());
+                        ps.setTimestamp(5, java.sql.Timestamp.valueOf(matchDate));
                         ps.executeUpdate();
                         matchCount++;
                     }
@@ -72,10 +74,10 @@ public class ScheduleDaoRoundRobin {
                 }
 
                 // rotate teams except first
-                TeamStanding fixed = teams.get(0);
-                TeamStanding last = teams.remove(teams.size() - 1);
-                teams.add(1, last);
-                teams.set(0, fixed);
+                TeamStanding fixed = bracket.get(0);
+                TeamStanding last = bracket.remove(bracket.size() - 1);
+                bracket.add(1, last);
+                bracket.set(0, fixed);
             }
 
             con.commit();

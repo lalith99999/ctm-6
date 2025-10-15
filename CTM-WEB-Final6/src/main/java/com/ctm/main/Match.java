@@ -59,6 +59,10 @@ public class Match {
     @FK(references = "teams(team_id)", onDelete = "SET NULL", onUpdate = "CASCADE")
     private Long winnerTeamId;
 
+    @Column(name = "first_innings_team_id", nullable = true)
+    @FK(references = "teams(team_id)", onDelete = "SET NULL", onUpdate = "CASCADE")
+    private Long firstInningsTeamId;
+
     @Column(name = "pom_jersey", nullable = true)
     @FK(references = "players(jersey_no)", onDelete = "SET NULL", onUpdate = "CASCADE")
     private Long playerOfMatchJersey;
@@ -145,6 +149,9 @@ public class Match {
 
     public Long getWinnerTeamId() { return winnerTeamId; }
     public void setWinnerTeamId(Long winnerTeamId) { this.winnerTeamId = winnerTeamId; }
+
+    public Long getFirstInningsTeamId() { return firstInningsTeamId; }
+    public void setFirstInningsTeamId(Long firstInningsTeamId) { this.firstInningsTeamId = firstInningsTeamId; }
 
     public Long getPlayerOfMatchJersey() { return playerOfMatchJersey; }
     public void setPlayerOfMatchJersey(Long playerOfMatchJersey) { this.playerOfMatchJersey = playerOfMatchJersey; }
